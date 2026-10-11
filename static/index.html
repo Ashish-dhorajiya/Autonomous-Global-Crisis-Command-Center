@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AegisGlobal AI - 3D Autonomous Crisis Command Deck</title>
   
   <!-- Tailwind CSS CDN -->
@@ -28,6 +28,7 @@
       background-color: #030712;
       color: #e2e8f0;
       overflow: hidden;
+      touch-action: manipulation;
     }
 
     .font-hud {
@@ -38,17 +39,17 @@
       font-family: 'Fira Code', monospace;
     }
 
-    /* Holographic glowing borders */
+    /* Holographic glass HUD styling */
     .glass-hud {
-      background: rgba(8, 15, 30, 0.78);
+      background: rgba(8, 15, 30, 0.82);
       backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(0, 243, 255, 0.22);
       box-shadow: 0 0 25px rgba(0, 243, 255, 0.08), inset 0 0 15px rgba(0, 243, 255, 0.04);
     }
 
     .glass-hud:hover {
       border-color: rgba(0, 243, 255, 0.45);
-      box-shadow: 0 0 30px rgba(0, 243, 255, 0.16);
     }
 
     .glow-text-cyan {
@@ -63,7 +64,7 @@
       text-shadow: 0 0 12px rgba(0, 255, 102, 0.85);
     }
 
-    /* Custom scrollbar */
+    /* Custom sleek scrollbar */
     ::-webkit-scrollbar {
       width: 4px;
     }
@@ -75,94 +76,100 @@
       border-radius: 2px;
     }
 
-    /* Pulsing animations */
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.9; }
-      50% { transform: scale(1.15); opacity: 0.4; }
-      100% { transform: scale(0.95); opacity: 0.9; }
-    }
-    .animate-pulse-ring {
-      animation: pulse-ring 2s infinite ease-in-out;
+    /* Smooth slide animations for mobile panels */
+    .mobile-panel-transition {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
     }
   </style>
 </head>
-<body class="w-screen h-screen relative select-none">
+<body class="w-screen h-screen relative select-none overflow-hidden">
 
   <!-- 3D GLOBE CANVAS CONTAINER -->
   <div id="globeViz" class="absolute inset-0 w-full h-full z-0 cursor-grab active:cursor-grabbing"></div>
 
-  <!-- TOP HEADER HUD -->
-  <header class="absolute top-0 left-0 right-0 z-20 glass-hud border-t-0 border-x-0 px-6 py-3 flex items-center justify-between">
-    <div class="flex items-center space-x-4">
-      <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping"></div>
+  <!-- TOP HEADER HUD (Responsive across mobile & desktop) -->
+  <header class="absolute top-0 left-0 right-0 z-30 glass-hud border-t-0 border-x-0 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
+    <!-- Brand / Title -->
+    <div class="flex items-center space-x-2.5 sm:space-x-4">
+      <div class="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-cyan-400 animate-ping"></div>
       <div>
-        <div class="flex items-center space-x-2">
-          <span class="font-hud font-black text-xl tracking-wider text-cyan-400 glow-text-cyan">AEGIS·GLOBAL AI</span>
-          <span class="text-xs px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-hud">v1.0 MIL-SPEC</span>
+        <div class="flex items-center space-x-1.5 sm:space-x-2">
+          <span class="font-hud font-black text-sm sm:text-lg md:text-xl tracking-wider text-cyan-400 glow-text-cyan">AEGIS·GLOBAL AI</span>
+          <span class="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-hud">MIL-SPEC</span>
         </div>
-        <p class="text-xs text-slate-400 font-mono tracking-widest uppercase" id="subTitleText">
+        <p class="hidden sm:block text-[10px] md:text-xs text-slate-400 font-mono tracking-widest uppercase" id="subTitleText">
           3D Autonomous Geopolitical & Supply Chain Crisis Engine
         </p>
       </div>
     </div>
 
-    <!-- Center Status Indicator -->
-    <div class="hidden md:flex items-center space-x-6 font-code text-xs">
+    <!-- Center Status Indicator (Hidden on small mobile, visible on tablet/desktop) -->
+    <div class="hidden lg:flex items-center space-x-5 font-code text-xs">
       <div class="flex items-center space-x-2">
-        <span class="text-slate-400">DEFCON STATUS:</span>
-        <span id="defconStatus" class="font-hud font-bold text-emerald-400 glow-text-green px-2 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded">GREEN · NOMINAL</span>
+        <span class="text-slate-400">DEFCON:</span>
+        <span id="defconStatusDesktop" class="font-hud font-bold text-emerald-400 glow-text-green px-2 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded">GREEN · NOMINAL</span>
       </div>
       <div class="flex items-center space-x-2">
-        <span class="text-slate-400">GLOBAL SATELLITE UPTIME:</span>
+        <span class="text-slate-400">UPTIME:</span>
         <span class="text-cyan-400 font-semibold">99.98%</span>
       </div>
       <div class="flex items-center space-x-2">
-        <span class="text-slate-400">UTC CLOCK:</span>
+        <span class="text-slate-400">UTC:</span>
         <span id="utcTime" class="text-amber-400 font-mono">--:--:-- UTC</span>
       </div>
     </div>
 
-    <!-- Right Controls: Language & Reset -->
-    <div class="flex items-center space-x-3">
-      <button id="langToggleBtn" onclick="toggleLanguage()" class="px-3 py-1.5 rounded text-xs font-hud tracking-wider bg-slate-900 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-950/60 transition flex items-center space-x-1.5">
-        <i data-lucide="languages" class="w-3.5 h-3.5"></i>
+    <!-- Right Controls: DEFCON (mobile), Language & Reset -->
+    <div class="flex items-center space-x-1.5 sm:space-x-3">
+      <!-- Mobile DEFCON Badge -->
+      <span id="defconStatusMobile" class="lg:hidden text-[9px] font-hud font-bold text-emerald-400 px-1.5 py-0.5 bg-emerald-950/80 border border-emerald-500/40 rounded">
+        DEFCON GREEN
+      </span>
+
+      <!-- Language Toggle -->
+      <button id="langToggleBtn" onclick="toggleLanguage()" class="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-hud tracking-wider bg-slate-900 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-950/60 active:scale-95 transition flex items-center space-x-1">
+        <i data-lucide="languages" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
         <span id="langBtnLabel">ગુજરાતી / EN</span>
       </button>
-      <button onclick="resetSimulation()" class="px-3 py-1.5 rounded text-xs font-hud tracking-wider bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800 transition flex items-center space-x-1.5">
-        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-        <span>RESET 3D</span>
+
+      <!-- 3D Camera Reset -->
+      <button onclick="resetSimulation()" class="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-hud tracking-wider bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800 active:scale-95 transition flex items-center space-x-1">
+        <i data-lucide="rotate-ccw" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
+        <span class="hidden sm:inline">RESET 3D</span>
       </button>
     </div>
   </header>
 
-  <!-- LEFT CONTROL PANEL: CRISIS TRIGGER & FLEET -->
-  <aside class="absolute left-4 top-20 bottom-4 w-96 z-10 flex flex-col space-y-4 pointer-events-auto">
-    
+  <!-- ======================================================== -->
+  <!-- DESKTOP / TABLET DUAL PANELS (Visible on lg: and larger) -->
+  <!-- ======================================================== -->
+  
+  <!-- LEFT PANEL: CRISIS & FLEET (Desktop: lg+) -->
+  <aside id="desktopLeftPanel" class="hidden lg:flex absolute left-4 top-20 bottom-4 w-80 xl:w-96 z-10 flex-col space-y-4 pointer-events-auto">
     <!-- Box 1: Crisis Trigger Deck -->
     <div class="glass-hud rounded-lg p-4 flex flex-col space-y-3">
       <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
         <div class="flex items-center space-x-2 text-cyan-400 font-hud text-xs tracking-wider">
           <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
-          <span id="crisisTriggerHeading">CRISIS SIMULATION TRIGGER</span>
+          <span class="crisisTriggerHeading">CRISIS SIMULATION TRIGGER</span>
         </div>
         <span class="text-[10px] text-slate-500 font-mono">SIM-V2</span>
       </div>
 
-      <!-- Presets List -->
       <div class="space-y-2">
-        <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider" id="quickScenarioLabel">Select Crisis Scenario:</label>
-        <div class="grid grid-cols-1 gap-1.5" id="presetsContainer">
+        <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider quickScenarioLabel">Select Crisis Scenario:</label>
+        <div class="grid grid-cols-1 gap-1.5 presetsContainer">
           <!-- Populated dynamically via JS -->
         </div>
       </div>
 
       <!-- Custom Prompt Box -->
       <div class="space-y-1.5 pt-2 border-t border-slate-800">
-        <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider" id="customInputLabel">Or Custom Scenario (Any Prompt):</label>
+        <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider customInputLabel">Or Custom Scenario (Any Prompt):</label>
         <div class="flex space-x-1.5">
-          <input id="customPromptInput" type="text" placeholder="e.g. Suez Canal Blocked by Mega Ship..." 
-            class="flex-1 bg-slate-950/90 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-code">
-          <button onclick="triggerCustomCrisis()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-hud font-bold text-xs rounded transition flex items-center space-x-1">
+          <input type="text" placeholder="e.g. Suez Canal Blocked..." 
+            class="customPromptInput flex-1 bg-slate-950/90 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-code">
+          <button onclick="triggerCustomCrisis(this)" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-hud font-bold text-xs rounded transition flex items-center space-x-1">
             <i data-lucide="zap" class="w-3.5 h-3.5"></i>
             <span>DEPLOY</span>
           </button>
@@ -175,25 +182,25 @@
       <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2">
         <div class="flex items-center space-x-2 text-cyan-400 font-hud text-xs tracking-wider">
           <i data-lucide="ship" class="w-4 h-4 text-cyan-400"></i>
-          <span id="fleetMonitoringHeading">MONITORED COMMERCIAL FLEET</span>
+          <span class="fleetMonitoringHeading">MONITORED COMMERCIAL FLEET</span>
         </div>
         <span class="text-xs text-emerald-400 font-code font-bold">4 VESSELS</span>
       </div>
 
-      <div class="overflow-y-auto space-y-2 flex-1 pr-1" id="fleetContainer">
+      <div class="overflow-y-auto space-y-2 flex-1 pr-1 fleetContainer">
         <!-- Vessel cards populated via JS -->
       </div>
     </div>
   </aside>
 
-  <!-- RIGHT CONTROL PANEL: 4 AI SWARM AGENTS REAL-TIME TELEMETRY -->
-  <aside class="absolute right-4 top-20 bottom-4 w-[420px] z-10 flex flex-col space-y-4 pointer-events-auto">
+  <!-- RIGHT PANEL: 4 AI SWARM TELEMETRY (Desktop: lg+) -->
+  <aside id="desktopRightPanel" class="hidden lg:flex absolute right-4 top-20 bottom-4 w-96 xl:w-[430px] z-10 flex-col space-y-4 pointer-events-auto">
     <div class="glass-hud rounded-lg p-4 flex-1 flex flex-col overflow-hidden">
       
       <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-3">
         <div class="flex items-center space-x-2 text-cyan-400 font-hud text-xs tracking-wider">
           <i data-lucide="cpu" class="w-4 h-4 text-cyan-400 animate-spin"></i>
-          <span id="swarmHeaderHeading">AUTONOMOUS 4-AGENT SWARM TELEMETRY</span>
+          <span class="swarmHeaderHeading">AUTONOMOUS 4-AGENT SWARM TELEMETRY</span>
         </div>
         <div class="flex items-center space-x-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -202,48 +209,85 @@
       </div>
 
       <!-- Agent Cards Scrollable -->
-      <div class="overflow-y-auto space-y-3 flex-1 pr-1 font-sans text-xs" id="swarmTelemetryContainer">
-        
-        <!-- Placeholder when idle -->
-        <div id="swarmIdlePlaceholder" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
-          <i data-lucide="radar" class="w-12 h-12 text-slate-600 animate-pulse"></i>
-          <p class="font-hud text-sm text-slate-400" id="idleTitle">SWARM STANDBY MODE</p>
-          <p class="text-xs font-mono text-slate-500 leading-relaxed" id="idleDesc">
-            All 4 Autonomous AI Agents are continuously indexing satellite and maritime corridors. Select or type a crisis scenario to deploy the swarm.
-          </p>
-        </div>
-
+      <div class="overflow-y-auto space-y-3 flex-1 pr-1 font-sans text-xs swarmTelemetryContainer">
+        <!-- Populated via JS -->
       </div>
 
       <!-- Bottom Executive Action Bar -->
-      <div id="executiveDirectiveBox" class="mt-3 pt-3 border-t border-cyan-500/20 hidden">
+      <div class="executiveDirectiveBox mt-3 pt-3 border-t border-cyan-500/20 hidden">
         <div class="p-3 bg-cyan-950/50 border border-cyan-500/40 rounded flex flex-col space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-hud text-cyan-300 uppercase tracking-widest">EXECUTIVE DIRECTIVE DISPATCHED</span>
-            <span class="text-[10px] font-mono text-emerald-400 font-bold" id="savedRoiBadge">SAVED: $855M</span>
+            <span class="text-[10px] font-mono text-emerald-400 font-bold savedRoiBadge">SAVED: $855M</span>
           </div>
-          <p id="executiveSummaryText" class="text-xs text-slate-200 font-mono leading-relaxed line-clamp-3"></p>
+          <p class="executiveSummaryText text-xs text-slate-200 font-mono leading-relaxed line-clamp-3"></p>
         </div>
       </div>
 
     </div>
   </aside>
 
-  <!-- BOTTOM FLOATING IMPACT STATS BAR -->
-  <div id="impactStatusBar" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 glass-hud px-6 py-2.5 rounded-full flex items-center space-x-8 font-hud text-xs hidden shadow-2xl">
-    <div class="flex items-center space-x-2">
-      <span class="text-slate-400">CARGO PROTECTED:</span>
-      <span id="statCargoValue" class="text-emerald-400 font-bold glow-text-green text-sm">$0M</span>
+  <!-- ======================================================== -->
+  <!-- MOBILE SLIDE-UP MODAL / BOTTOM SHEET (Visible on < lg)   -->
+  <!-- ======================================================== -->
+  <div id="mobileModalOverlay" class="lg:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm hidden mobile-panel-transition opacity-0" onclick="closeMobileSheet()"></div>
+
+  <div id="mobileSheet" class="lg:hidden fixed inset-x-2 sm:inset-x-6 bottom-16 top-16 z-50 glass-hud rounded-2xl flex flex-col overflow-hidden hidden mobile-panel-transition translate-y-full shadow-2xl border-cyan-500/40">
+    <!-- Mobile Sheet Header -->
+    <div class="p-4 border-b border-cyan-500/20 flex items-center justify-between bg-slate-950/80">
+      <div class="flex items-center space-x-2 text-cyan-400 font-hud text-sm">
+        <i id="mobileSheetIcon" data-lucide="layers" class="w-4 h-4"></i>
+        <span id="mobileSheetTitle">PANEL TITLE</span>
+      </div>
+      <button onclick="closeMobileSheet()" class="p-1 rounded-full bg-slate-800 text-slate-300 hover:text-white border border-slate-700">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
     </div>
-    <div class="h-4 w-px bg-slate-700"></div>
-    <div class="flex items-center space-x-2">
-      <span class="text-slate-400">AVG TRANSIT DELTA:</span>
-      <span id="statDelay" class="text-amber-400 font-bold text-sm">+0.0 DAYS</span>
+
+    <!-- Mobile Sheet Body (Scrollable Content) -->
+    <div id="mobileSheetContent" class="flex-1 overflow-y-auto p-4 space-y-4">
+      <!-- Dynamically filled depending on active tab -->
     </div>
-    <div class="h-4 w-px bg-slate-700"></div>
-    <div class="flex items-center space-x-2">
-      <span class="text-slate-400">SAFETY ASSURANCE:</span>
-      <span id="statSafety" class="text-cyan-400 font-bold text-sm">99.4%</span>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MOBILE BOTTOM NAVIGATION BAR (Visible on < lg)           -->
+  <!-- ======================================================== -->
+  <nav class="lg:hidden fixed bottom-2 inset-x-2 z-30 glass-hud rounded-2xl px-2 py-2 flex items-center justify-around text-[10px] font-hud shadow-2xl">
+    <button onclick="openMobileTab('crisis')" id="navBtn-crisis" class="flex flex-col items-center space-y-1 px-3 py-1.5 rounded-xl text-slate-400 hover:text-cyan-300 active:scale-95 transition">
+      <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+      <span>CRISIS</span>
+    </button>
+    <button onclick="openMobileTab('swarm')" id="navBtn-swarm" class="flex flex-col items-center space-y-1 px-3 py-1.5 rounded-xl text-slate-400 hover:text-cyan-300 active:scale-95 transition relative">
+      <span id="mobileSwarmBadge" class="hidden absolute top-0.5 right-2 w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+      <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+      <span>AI SWARM</span>
+    </button>
+    <button onclick="openMobileTab('fleet')" id="navBtn-fleet" class="flex flex-col items-center space-y-1 px-3 py-1.5 rounded-xl text-slate-400 hover:text-cyan-300 active:scale-95 transition">
+      <i data-lucide="ship" class="w-4 h-4 text-emerald-400"></i>
+      <span>FLEET</span>
+    </button>
+    <button onclick="closeMobileSheet()" id="navBtn-globe" class="flex flex-col items-center space-y-1 px-3 py-1.5 rounded-xl text-cyan-400 active:scale-95 transition">
+      <i data-lucide="globe-2" class="w-4 h-4 text-cyan-300"></i>
+      <span>3D GLOBE</span>
+    </button>
+  </nav>
+
+  <!-- BOTTOM FLOATING IMPACT STATS BAR (Desktop & Mobile Friendly) -->
+  <div id="impactStatusBar" class="absolute bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 z-20 glass-hud px-4 sm:px-6 py-2 rounded-full flex items-center space-x-3 sm:space-x-8 font-hud text-[10px] sm:text-xs hidden shadow-2xl border border-cyan-500/30">
+    <div class="flex items-center space-x-1 sm:space-x-2">
+      <span class="text-slate-400 hidden xs:inline">PROTECTED:</span>
+      <span class="statCargoValue text-emerald-400 font-bold glow-text-green">$0M</span>
+    </div>
+    <div class="h-3 w-px bg-slate-700"></div>
+    <div class="flex items-center space-x-1 sm:space-x-2">
+      <span class="text-slate-400 hidden xs:inline">DELAY:</span>
+      <span class="statDelay text-amber-400 font-bold">+0.0 DAYS</span>
+    </div>
+    <div class="h-3 w-px bg-slate-700"></div>
+    <div class="flex items-center space-x-1 sm:space-x-2">
+      <span class="text-slate-400 hidden xs:inline">SAFETY:</span>
+      <span class="statSafety text-cyan-400 font-bold">99.4%</span>
     </div>
   </div>
 
@@ -254,6 +298,8 @@
     let systemState = null;
     let activeArcs = [];
     let dangerRings = [];
+    let lastSimResult = null;
+    let activeMobileTab = null;
 
     // Translations Dictionary
     const I18N = {
@@ -286,19 +332,18 @@
 
     function updateUILanguage() {
       const texts = I18N[currentLanguage];
-      document.getElementById('subTitleText').textContent = texts.subTitle;
-      document.getElementById('crisisTriggerHeading').textContent = texts.crisisHeading;
-      document.getElementById('quickScenarioLabel').textContent = texts.selectScenario;
-      document.getElementById('customInputLabel').textContent = texts.customScenario;
-      document.getElementById('fleetMonitoringHeading').textContent = texts.fleetHeading;
-      document.getElementById('swarmHeaderHeading').textContent = texts.swarmHeading;
-      
-      const idleTitleEl = document.getElementById('idleTitle');
-      const idleDescEl = document.getElementById('idleDesc');
-      if (idleTitleEl && idleDescEl) {
-        idleTitleEl.textContent = texts.idleTitle;
-        idleDescEl.textContent = texts.idleDesc;
-      }
+      const subTitleEl = document.getElementById('subTitleText');
+      if (subTitleEl) subTitleEl.textContent = texts.subTitle;
+
+      document.querySelectorAll('.crisisTriggerHeading').forEach(el => el.textContent = texts.crisisHeading);
+      document.querySelectorAll('.quickScenarioLabel').forEach(el => el.textContent = texts.selectScenario);
+      document.querySelectorAll('.customInputLabel').forEach(el => el.textContent = texts.customScenario);
+      document.querySelectorAll('.fleetMonitoringHeading').forEach(el => el.textContent = texts.fleetHeading);
+      document.querySelectorAll('.swarmHeaderHeading').forEach(el => el.textContent = texts.swarmHeading);
+
+      document.querySelectorAll('.idleTitle').forEach(el => el.textContent = texts.idleTitle);
+      document.querySelectorAll('.idleDesc').forEach(el => el.textContent = texts.idleDesc);
+
       lucide.createIcons();
     }
 
@@ -341,19 +386,24 @@
         .pointLabel(d => `<b>${d.name}</b> (${d.country || ''})`);
 
       // Initial camera positioning: focusing over Indian Ocean / Eurasia
-      myGlobe.pointOfView({ lat: 20, lng: 65, altitude: 2.2 }, 2000);
+      const isMobile = window.innerWidth < 768;
+      myGlobe.pointOfView({ lat: 20, lng: 65, altitude: isMobile ? 2.8 : 2.2 }, 2000);
       
       // Auto-rotation
       myGlobe.controls().autoRotate = true;
       myGlobe.controls().autoRotateSpeed = 0.5;
 
-      // Stop auto-rotation when user interacts
-      container.addEventListener('mousedown', () => {
+      container.addEventListener('pointerdown', () => {
         myGlobe.controls().autoRotate = false;
+      });
+
+      // Handle window resize dynamically for mobile/tablet orientation changes
+      window.addEventListener('resize', () => {
+        myGlobe.width(window.innerWidth).height(window.innerHeight);
       });
     }
 
-    // Load Initial State from FastAPI Backend
+    // Load Initial State from Backend
     async function fetchInitialState() {
       try {
         const res = await fetch('/api/initial-state');
@@ -361,51 +411,72 @@
         renderPresets();
         renderFleet();
         renderBaseMaritimeRoutes();
+        renderInitialSwarmStandby();
       } catch (err) {
         console.error("Failed to load initial state:", err);
       }
     }
 
-    // Render Preset Crisis Buttons
+    function renderInitialSwarmStandby() {
+      const texts = I18N[currentLanguage];
+      const standbyHTML = `
+        <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
+          <i data-lucide="radar" class="w-10 h-10 sm:w-12 sm:h-12 text-slate-600 animate-pulse"></i>
+          <p class="font-hud text-sm text-slate-400 idleTitle">${texts.idleTitle}</p>
+          <p class="text-xs font-mono text-slate-500 leading-relaxed idleDesc">${texts.idleDesc}</p>
+        </div>
+      `;
+      document.querySelectorAll('.swarmTelemetryContainer').forEach(c => c.innerHTML = standbyHTML);
+      lucide.createIcons();
+    }
+
+    // Render Preset Crisis Buttons into all containers (desktop & mobile)
     function renderPresets() {
-      const container = document.getElementById('presetsContainer');
-      container.innerHTML = '';
-      systemState.presets.forEach(p => {
-        const btn = document.createElement('button');
-        btn.className = "w-full text-left p-2 rounded bg-slate-900/80 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-500/50 transition flex items-center justify-between group";
-        btn.onclick = () => runCrisisSimulation(p.id);
-        btn.innerHTML = `
-          <div class="flex flex-col">
-            <span class="text-xs font-hud text-slate-200 group-hover:text-cyan-300">${p.title}</span>
-            <span class="text-[10px] font-mono text-slate-500">${p.chokepoint} · ${p.severity}</span>
-          </div>
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400"></i>
-        `;
-        container.appendChild(btn);
+      document.querySelectorAll('.presetsContainer').forEach(container => {
+        container.innerHTML = '';
+        systemState.presets.forEach(p => {
+          const btn = document.createElement('button');
+          btn.className = "w-full text-left p-2 sm:p-2.5 rounded bg-slate-900/80 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-500/50 active:scale-98 transition flex items-center justify-between group";
+          btn.onclick = () => {
+            runCrisisSimulation(p.id);
+            if (window.innerWidth < 1024) {
+              openMobileTab('swarm'); // Automatically switch to Swarm tab on mobile
+            }
+          };
+          btn.innerHTML = `
+            <div class="flex flex-col pr-1">
+              <span class="text-xs font-hud text-slate-200 group-hover:text-cyan-300 line-clamp-1">${p.title}</span>
+              <span class="text-[10px] font-mono text-slate-500">${p.chokepoint} · ${p.severity}</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400 flex-shrink-0"></i>
+          `;
+          container.appendChild(btn);
+        });
       });
       lucide.createIcons();
     }
 
     // Render Monitored Fleet
     function renderFleet() {
-      const container = document.getElementById('fleetContainer');
-      container.innerHTML = '';
-      systemState.fleet.forEach(v => {
-        const card = document.createElement('div');
-        card.id = `fleet-${v.id}`;
-        card.className = "p-2.5 rounded bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition flex flex-col space-y-1.5";
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="font-hud text-xs text-cyan-300">${v.name.split('(')[0]}</span>
-            <span class="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30">${v.status}</span>
-          </div>
-          <p class="text-[11px] text-slate-400 font-sans line-clamp-1">${v.cargo}</p>
-          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
-            <span>VALUE: $${v.cargo_value_usd_m}M</span>
-            <span>SPEED: ${v.speed_knots} KNOTS</span>
-          </div>
-        `;
-        container.appendChild(card);
+      document.querySelectorAll('.fleetContainer').forEach(container => {
+        container.innerHTML = '';
+        systemState.fleet.forEach(v => {
+          const card = document.createElement('div');
+          card.id = `fleet-${v.id}`;
+          card.className = "p-2.5 rounded bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition flex flex-col space-y-1.5";
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-hud text-xs text-cyan-300">${v.name.split('(')[0]}</span>
+              <span class="text-[9px] sm:text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30">${v.status}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-sans line-clamp-1">${v.cargo}</p>
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+              <span>VALUE: $${v.cargo_value_usd_m}M</span>
+              <span>SPEED: ${v.speed_knots} KNOTS</span>
+            </div>
+          `;
+          container.appendChild(card);
+        });
       });
     }
 
@@ -414,7 +485,6 @@
       activeArcs = [];
       const ports = systemState.ports;
 
-      // Sample connecting shipping corridors
       const corridors = [
         ["Shanghai", "Singapore"],
         ["Singapore", "Colombo"],
@@ -444,7 +514,6 @@
 
       myGlobe.arcsData(activeArcs);
 
-      // Render Port Markers
       const portPoints = Object.entries(ports).map(([name, p]) => ({
         name,
         country: p.country,
@@ -457,20 +526,32 @@
 
     // Trigger Crisis Simulation
     async function runCrisisSimulation(presetId, customPrompt = null) {
-      // Visual feedback: DEFCON RED
-      const defcon = document.getElementById('defconStatus');
-      defcon.textContent = "RED · CRISIS ACTIVE";
-      defcon.className = "font-hud font-bold text-red-500 glow-text-red px-2 py-0.5 bg-red-950/60 border border-red-500/50 rounded animate-pulse";
+      // Visual feedback: DEFCON RED on both desktop & mobile
+      const defconDesk = document.getElementById('defconStatusDesktop');
+      if (defconDesk) {
+        defconDesk.textContent = "RED · CRISIS ACTIVE";
+        defconDesk.className = "font-hud font-bold text-red-500 glow-text-red px-2 py-0.5 bg-red-950/60 border border-red-500/50 rounded animate-pulse";
+      }
 
-      // Show Telemetry Loader
-      const swarmContainer = document.getElementById('swarmTelemetryContainer');
-      swarmContainer.innerHTML = `
+      const defconMob = document.getElementById('defconStatusMobile');
+      if (defconMob) {
+        defconMob.textContent = "DEFCON RED";
+        defconMob.className = "lg:hidden text-[9px] font-hud font-bold text-red-400 px-1.5 py-0.5 bg-red-950/90 border border-red-500/60 rounded animate-pulse";
+      }
+
+      // Mobile badge indicator on Swarm button
+      const mobBadge = document.getElementById('mobileSwarmBadge');
+      if (mobBadge) mobBadge.classList.remove('hidden');
+
+      // Show Telemetry Loader across containers
+      const loaderHTML = `
         <div class="h-full flex flex-col items-center justify-center space-y-3 p-6 text-center">
           <div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
           <span class="font-hud text-xs text-cyan-300">SWARM ORCHESTRATION IN PROGRESS...</span>
-          <span class="text-[10px] font-mono text-slate-500">Agent 1 to 4 synchronizing satellite and oceanic corridors</span>
+          <span class="text-[10px] font-mono text-slate-500">Synchronizing satellite and deep-water vectors</span>
         </div>
       `;
+      document.querySelectorAll('.swarmTelemetryContainer').forEach(c => c.innerHTML = loaderHTML);
 
       try {
         const payload = presetId ? { preset_id: presetId } : { custom_prompt: customPrompt };
@@ -480,24 +561,29 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
+        lastSimResult = data;
         handleSimulationResponse(data);
       } catch (err) {
         console.error("Simulation error:", err);
-        alert("Simulation backend connection failed. Ensure python app.py is running!");
+        alert("Simulation backend connection failed. Ensure server is running!");
       }
     }
 
-    function triggerCustomCrisis() {
-      const input = document.getElementById('customPromptInput');
+    function triggerCustomCrisis(btn) {
+      const container = btn.closest('.glass-hud') || document;
+      const input = container.querySelector('.customPromptInput') || document.querySelector('.customPromptInput');
       const val = input.value.trim();
       if (!val) {
         alert("Please enter a crisis prompt!");
         return;
       }
       runCrisisSimulation(null, val);
+      if (window.innerWidth < 1024) {
+        openMobileTab('swarm');
+      }
     }
 
-    // Handle and Render Swarm Telemetry & 3D Visualization
+    // Handle Swarm Telemetry & 3D Visualization
     function handleSimulationResponse(data) {
       const crisis = data.crisis;
       const agent1 = data.agent_1_intelligence;
@@ -513,10 +599,10 @@
       }];
       myGlobe.ringsData(dangerRings);
 
-      // Focus Camera onto Crisis Epicenter
-      myGlobe.pointOfView({ lat: crisis.lat, lng: crisis.lng, altitude: 1.8 }, 1500);
+      const isMobile = window.innerWidth < 768;
+      myGlobe.pointOfView({ lat: crisis.lat, lng: crisis.lng, altitude: isMobile ? 2.3 : 1.8 }, 1500);
 
-      // 2. Add New Safe Emerald Green Arcs for Rerouted Vessels
+      // 2. Add Emerald Green Arcs for Rerouted Vessels
       let newArcs = [...activeArcs];
       agent2.forEach(plan => {
         const coords = plan.route_coordinates;
@@ -526,7 +612,7 @@
             startLng: coords[i].lng,
             endLat: coords[i + 1].lat,
             endLng: coords[i + 1].lng,
-            color: ['#00ff66', '#00ff66'], // Neon Emerald Green
+            color: ['#00ff66', '#00ff66'],
             stroke: 2.8,
             altitude: 0.22
           });
@@ -534,9 +620,8 @@
       });
       myGlobe.arcsData(newArcs);
 
-      // 3. Render the 4 Agent Telemetry Cards
-      const swarmContainer = document.getElementById('swarmTelemetryContainer');
-      swarmContainer.innerHTML = `
+      // 3. Render 4 Agent Telemetry Cards
+      const telemetryHTML = `
         <!-- Agent 1 Card -->
         <div class="p-3 rounded bg-slate-900/90 border border-red-500/40 shadow-lg space-y-1.5">
           <div class="flex items-center justify-between">
@@ -544,11 +629,11 @@
               <i data-lucide="satellite" class="w-3.5 h-3.5"></i>
               <span>AGENT 1: ${agent1.agent}</span>
             </span>
-            <span class="text-[10px] font-mono text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40">${agent1.threat_level}</span>
+            <span class="text-[9px] sm:text-[10px] font-mono text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40">${agent1.threat_level}</span>
           </div>
           <p class="text-xs text-slate-300 font-mono">${agent1.description}</p>
           <div class="text-[10px] font-mono text-amber-300">
-            ⚠ EXCLUSION RADIUS: ${agent1.exclusion_radius_km} KM · IMPACTED: ${agent1.impacted_vessels.join(', ')}
+            ⚠ EXCLUSION: ${agent1.exclusion_radius_km} KM · IMPACTED: ${agent1.impacted_vessels.join(', ')}
           </div>
         </div>
 
@@ -559,7 +644,7 @@
               <i data-lucide="compass" class="w-3.5 h-3.5"></i>
               <span>AGENT 2: ${agent2[0].strategy ? 'NAVEX-4' : 'NAVEX'}</span>
             </span>
-            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">3D REROUTE ACTIVE</span>
+            <span class="text-[9px] sm:text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">3D REROUTE ACTIVE</span>
           </div>
           <p class="text-xs text-slate-300 font-mono">Bypass Strategy: ${agent2[0].strategy}</p>
           <div class="text-[10px] font-mono text-emerald-300">
@@ -574,7 +659,7 @@
               <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
               <span>AGENT 3: ${agent3.agent}</span>
             </span>
-            <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-500/40">QUANT AUDIT</span>
+            <span class="text-[9px] sm:text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-500/40">QUANT AUDIT</span>
           </div>
           <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-300 pt-1">
             <div class="bg-slate-950/70 p-1.5 rounded">
@@ -603,25 +688,26 @@
               <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
               <span>AGENT 4: ${agent4.agent}</span>
             </span>
-            <span class="text-[10px] font-mono text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40">${agent4.status}</span>
+            <span class="text-[9px] sm:text-[10px] font-mono text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40">${agent4.status}</span>
           </div>
           <p class="text-[11px] text-slate-300 font-mono leading-tight">${agent4.insurance_underwriter_filing}</p>
         </div>
       `;
+
+      document.querySelectorAll('.swarmTelemetryContainer').forEach(c => c.innerHTML = telemetryHTML);
       lucide.createIcons();
 
       // 4. Update Bottom Floating Bar
       const bottomBar = document.getElementById('impactStatusBar');
       bottomBar.classList.remove('hidden');
-      document.getElementById('statCargoValue').textContent = `$${agent3.total_cargo_value_saved_usd_m}M`;
-      document.getElementById('statDelay').textContent = `+${agent3.average_transit_delay_days} DAYS`;
-      document.getElementById('statSafety').textContent = `99.4%`;
+      document.querySelectorAll('.statCargoValue').forEach(el => el.textContent = `$${agent3.total_cargo_value_saved_usd_m}M`);
+      document.querySelectorAll('.statDelay').forEach(el => el.textContent = `+${agent3.average_transit_delay_days} DAYS`);
+      document.querySelectorAll('.statSafety').forEach(el => el.textContent = `99.4%`);
 
       // 5. Update Executive Directive Box
-      const execBox = document.getElementById('executiveDirectiveBox');
-      execBox.classList.remove('hidden');
-      document.getElementById('savedRoiBadge').textContent = `SAVED: $${agent3.total_cargo_value_saved_usd_m}M`;
-      document.getElementById('executiveSummaryText').textContent = agent4.executive_summary;
+      document.querySelectorAll('.executiveDirectiveBox').forEach(b => b.classList.remove('hidden'));
+      document.querySelectorAll('.savedRoiBadge').forEach(el => el.textContent = `SAVED: $${agent3.total_cargo_value_saved_usd_m}M`);
+      document.querySelectorAll('.executiveSummaryText').forEach(el => el.textContent = agent4.executive_summary);
     }
 
     function resetSimulation() {
@@ -629,35 +715,124 @@
       myGlobe.ringsData([]);
       renderBaseMaritimeRoutes();
       document.getElementById('impactStatusBar').classList.add('hidden');
-      document.getElementById('executiveDirectiveBox').classList.add('hidden');
+      document.querySelectorAll('.executiveDirectiveBox').forEach(b => b.classList.add('hidden'));
       
-      const defcon = document.getElementById('defconStatus');
-      defcon.textContent = "GREEN · NOMINAL";
-      defcon.className = "font-hud font-bold text-emerald-400 glow-text-green px-2 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded";
+      const defconDesk = document.getElementById('defconStatusDesktop');
+      if (defconDesk) {
+        defconDesk.textContent = "GREEN · NOMINAL";
+        defconDesk.className = "font-hud font-bold text-emerald-400 glow-text-green px-2 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded";
+      }
 
-      const swarmContainer = document.getElementById('swarmTelemetryContainer');
-      swarmContainer.innerHTML = `
-        <div id="swarmIdlePlaceholder" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
-          <i data-lucide="radar" class="w-12 h-12 text-slate-600 animate-pulse"></i>
-          <p class="font-hud text-sm text-slate-400" id="idleTitle">SWARM STANDBY MODE</p>
-          <p class="text-xs font-mono text-slate-500 leading-relaxed" id="idleDesc">
-            All 4 Autonomous AI Agents are continuously indexing satellite and maritime corridors. Select or type a crisis scenario to deploy the swarm.
-          </p>
-        </div>
-      `;
+      const defconMob = document.getElementById('defconStatusMobile');
+      if (defconMob) {
+        defconMob.textContent = "DEFCON GREEN";
+        defconMob.className = "lg:hidden text-[9px] font-hud font-bold text-emerald-400 px-1.5 py-0.5 bg-emerald-950/80 border border-emerald-500/40 rounded";
+      }
+
+      const mobBadge = document.getElementById('mobileSwarmBadge');
+      if (mobBadge) mobBadge.classList.add('hidden');
+
+      renderInitialSwarmStandby();
       updateUILanguage();
-      myGlobe.pointOfView({ lat: 20, lng: 65, altitude: 2.2 }, 1500);
+      const isMobile = window.innerWidth < 768;
+      myGlobe.pointOfView({ lat: 20, lng: 65, altitude: isMobile ? 2.8 : 2.2 }, 1500);
+      closeMobileSheet();
+    }
+
+    // ========================================================
+    // MOBILE DRAWER / SHEET LOGIC
+    // ========================================================
+    function openMobileTab(tab) {
+      activeMobileTab = tab;
+      const overlay = document.getElementById('mobileModalOverlay');
+      const sheet = document.getElementById('mobileSheet');
+      const title = document.getElementById('mobileSheetTitle');
+      const icon = document.getElementById('mobileSheetIcon');
+      const content = document.getElementById('mobileSheetContent');
+
+      overlay.classList.remove('hidden');
+      sheet.classList.remove('hidden');
+      setTimeout(() => {
+        overlay.classList.remove('opacity-0');
+        sheet.classList.remove('translate-y-full');
+      }, 10);
+
+      // Populate content based on selected tab
+      if (tab === 'crisis') {
+        title.textContent = currentLanguage === 'gu' ? "કટોકટી ટ્રિગર" : "CRISIS TRIGGER";
+        icon.setAttribute('data-lucide', 'alert-triangle');
+        content.innerHTML = `
+          <div class="space-y-3">
+            <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider">${currentLanguage === 'gu' ? 'કટોકટી પસંદ કરો:' : 'Select Crisis Scenario:'}</label>
+            <div class="grid grid-cols-1 gap-2 presetsContainer"></div>
+
+            <div class="pt-3 border-t border-slate-800 space-y-2">
+              <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider">${currentLanguage === 'gu' ? 'અથવા કસ્ટમ પ્રોમ્પ્ટ લખો:' : 'Or Custom Scenario (Any Prompt):'}</label>
+              <div class="flex flex-col space-y-2">
+                <input type="text" placeholder="e.g. Cyclone near Mumbai..." 
+                  class="customPromptInput w-full bg-slate-950/90 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-code">
+                <button onclick="triggerCustomCrisis(this)" class="w-full py-2.5 bg-cyan-600 active:bg-cyan-500 text-slate-950 font-hud font-bold text-xs rounded-lg transition flex items-center justify-center space-x-1.5 shadow-lg">
+                  <i data-lucide="zap" class="w-4 h-4"></i>
+                  <span>DEPLOY AI SWARM</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        renderPresets();
+      } else if (tab === 'swarm') {
+        title.textContent = currentLanguage === 'gu' ? "૪ સ્વાયત્ત AI એજન્ટ્સ" : "4-AGENT SWARM TELEMETRY";
+        icon.setAttribute('data-lucide', 'cpu');
+        const deskSwarmContent = document.querySelector('#desktopRightPanel .swarmTelemetryContainer').innerHTML;
+        content.innerHTML = `
+          <div class="space-y-3">
+            <div class="swarmTelemetryContainer space-y-3">${deskSwarmContent}</div>
+            <div class="executiveDirectiveBox ${lastSimResult ? '' : 'hidden'} mt-3 pt-3 border-t border-cyan-500/20">
+              <div class="p-3 bg-cyan-950/50 border border-cyan-500/40 rounded flex flex-col space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-hud text-cyan-300 uppercase tracking-widest">EXECUTIVE DIRECTIVE</span>
+                  <span class="text-[10px] font-mono text-emerald-400 font-bold savedRoiBadge">${lastSimResult ? 'SAVED: $' + lastSimResult.agent_3_financial_auditor.total_cargo_value_saved_usd_m + 'M' : ''}</span>
+                </div>
+                <p class="executiveSummaryText text-xs text-slate-200 font-mono leading-relaxed">${lastSimResult ? lastSimResult.agent_4_executive_diplomat.executive_summary : ''}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (tab === 'fleet') {
+        title.textContent = currentLanguage === 'gu' ? "નિરીક્ષણ હેઠળના જહાજો" : "MONITORED COMMERCIAL FLEET";
+        icon.setAttribute('data-lucide', 'ship');
+        content.innerHTML = `<div class="space-y-2.5 fleetContainer"></div>`;
+        renderFleet();
+      }
+
+      lucide.createIcons();
+    }
+
+    function closeMobileSheet() {
+      activeMobileTab = null;
+      const overlay = document.getElementById('mobileModalOverlay');
+      const sheet = document.getElementById('mobileSheet');
+      if (!sheet) return;
+
+      overlay.classList.add('opacity-0');
+      sheet.classList.add('translate-y-full');
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        sheet.classList.add('hidden');
+      }, 300);
     }
 
     // Live UTC Clock
     function startClock() {
       setInterval(() => {
         const d = new Date();
-        document.getElementById('utcTime').textContent = d.toISOString().substring(11, 19) + ' UTC';
+        const timeStr = d.toISOString().substring(11, 19) + ' UTC';
+        const el = document.getElementById('utcTime');
+        if (el) el.textContent = timeStr;
       }, 1000);
     }
 
-    // Startup
+    // Startup Initialization
     window.addEventListener('DOMContentLoaded', () => {
       init3DGlobe();
       fetchInitialState();

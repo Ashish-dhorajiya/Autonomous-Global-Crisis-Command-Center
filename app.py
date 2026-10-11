@@ -37,6 +37,7 @@ class CrisisRequest(BaseModel):
     custom_prompt: Optional[str] = None
 
 @app.get("/api/initial-state")
+@app.get("/initial-state")
 def get_initial_state():
     """Returns ports, chokepoints, active fleet, and preset crises."""
     return {
@@ -47,6 +48,7 @@ def get_initial_state():
     }
 
 @app.post("/api/simulate-crisis")
+@app.post("/simulate-crisis")
 def simulate_crisis(req: CrisisRequest):
     """Executes the 4-Agent Swarm against a preset or custom crisis."""
     target_crisis = None
@@ -101,15 +103,20 @@ def simulate_crisis(req: CrisisRequest):
 
 # Ensure static directory exists
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(static_dir, exist_ok=True)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+public_dir = os.path.join(os.path.dirname(__file__), "public")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/")
 def serve_index():
-    index_file = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return {"message": "AegisGlobal AI Backend Running. Frontend is compiling..."}
+    for candidate in [
+        os.path.join(public_dir, "index.html"),
+        os.path.join(static_dir, "index.html"),
+        os.path.join(os.path.dirname(__file__), "index.html")
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate)
+    return {"message": "AegisGlobal AI Backend Running."}
 
 if __name__ == "__main__":
     import uvicorn
@@ -118,5 +125,3 @@ if __name__ == "__main__":
     print("  [*] System live at: http://127.0.0.1:8000")
     print("="*60 + "\n")
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
-
-    app = app  

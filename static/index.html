@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisGlobal AI - 3D Autonomous Crisis Command Deck</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & Globe.gl for 3D Earth Globe -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/globe.gl@2.32.4/dist/globe.gl.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+    :root {
+      --neon-cyan: #00f3ff;
+      --neon-green: #00ff66;
+      --neon-red: #ff0055;
+      --neon-amber: #ffaa00;
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: #030712;
+      color: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .font-hud {
+      font-family: 'Orbitron', monospace;
+    }
+
+    .font-code {
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Holographic glowing borders */
+    .glass-hud {
+      background: rgba(8, 15, 30, 0.78);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 243, 255, 0.22);
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.08), inset 0 0 15px rgba(0, 243, 255, 0.04);
+    }
+
+    .glass-hud:hover {
+      border-color: rgba(0, 243, 255, 0.45);
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.16);
+    }
+
+    .glow-text-cyan {
+      text-shadow: 0 0 10px rgba(0, 243, 255, 0.7);
+    }
+
+    .glow-text-red {
+      text-shadow: 0 0 12px rgba(255, 0, 85, 0.85);
+    }
+
+    .glow-text-green {
+      text-shadow: 0 0 12px rgba(0, 255, 102, 0.85);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(3, 7, 18, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #00f3ff55;
+      border-radius: 2px;
+    }
+
+    /* Pulsing animations */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.15); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .animate-pulse-ring {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen relative select-none">
+
+  <!-- 3D GLOBE CANVAS CONTAINER -->
+  <div id="globeViz" class="absolute inset-0 w-full h-full z-0 cursor-grab active:cursor-grabbing"></div>
+
+  <!-- TOP HEADER HUD -->
+  <header class="absolute top-0 left-0 right-0 z-20 glass-hud border-t-0 border-x-0 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping"></div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-hud font-black text-xl tracking-wider text-cyan-400 glow-text-cyan">AEGIS·GLOBAL AI</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-hud">v1.0 MIL-SPEC</span>
+        </div>
+        <p class="text-xs text-slate-400 font-mono tracking-widest uppercase" id="subTitleText">
+          3D Autonomous Geopolitical & Supply Chain Crisis Engine
+        </p>
+      </div>
+    </div>
+
+    <!-- Center Status Indicator -->
+    <div class="hidden md:flex items-center space-x-6 font-code text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-400">DEFCON STATUS:</span>
+        <span id="defconStatus" class="font-hud font-bold text-emerald-400 glow-text-green px-2 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded">GREEN · NOMINAL</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-400">GLOBAL SATELLITE UPTIME:</span>
+        <span class="text-cyan-400 font-semibold">99.98%</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-400">UTC CLOCK:</span>
+        <span id="utcTime" class="text-amber-400 font-mono">--:--:-- UTC</span>
+      </div>
+    </div>
+
+    <!-- Right Controls: Language & Reset -->
+    <div class="flex items-center space-x-3">
+      <button id="langToggleBtn" onclick="toggleLanguage()" class="px-3 py-1.5 rounded text-xs font-hud tracking-wider bg-slate-900 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-950/60 transition flex items-center space-x-1.5">
+        <i data-lucide="languages" class="w-3.5 h-3.5"></i>
+        <span id="langBtnLabel">ગુજરાતી / EN</span>
+      </button>
+      <button onclick="resetSimulation()" class="px-3 py-1.5 rounded text-xs font-hud tracking-wider bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800 transition flex items-center space-x-1.5">
+        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        <span>RESET 3D</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- LEFT CONTROL PANEL: CRISIS TRIGGER & FLEET -->
+  <aside class="absolute left-4 top-20 bottom-4 w-96 z-10 flex flex-col space-y-4 pointer-events-auto">
+    
+    <!-- Box 1: Crisis Trigger Deck -->
+    <div class="glass-hud rounded-lg p-4 flex flex-col space-y-3">
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+        <div class="flex items-center space-x-2 text-cyan-400 font-hud text-xs tracking-wider">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+          <span id="crisisTriggerHeading">CRISIS SIMULATION TRIGGER</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">SIM-V2</span>
+      </div>
+
+      <!-- Presets List -->
+      <div class="space-y-2">
+        <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider" id="quickScenarioLabel">Select Crisis Scenario:</label>
+        <div class="grid grid-cols-1 gap-1.5" id="presetsContainer">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Custom Prompt Box -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800">
+        <label class="text-[11px] text-slate-400 uppercase font-mono tracking-wider" id="customInputLabel">Or Custom Scenario (Any Prompt):</label>
+        <div class="flex space-x-1.5">
+          <input id="customPromptInput" type="text" placeholder="e.g. Suez Canal Blocked by Mega Ship..." 
+            class="flex-1 bg-slate-950/90 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-code">
+          <button onclick="triggerCustomCrisis()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-hud font-bold text-xs rounded transition flex items-center space-x-1">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            <span>DEPLOY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Box 2: Monitored Fleet -->
+    <div class="glass-hud rounded-lg p-4 flex-1 flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2">
+        <div class="flex items-center space-x-2 text-cyan-400 font-hud text-xs tracking-wider">
+          <i data-lucide="ship" class="w-4 h-4 text-cyan-400"></i>
+          <span id="fleetMonitoringHeading">MONITORED COMMERCIAL FLEET</span>
+        </div>
+        <span class="text-xs text-emerald-400 font-code font-bold">4 VESSELS</span>
+      </div>
+
+      <div class="overflow-y-auto space-y-2 flex-1 pr-1" id="fleetContainer">
+        <!-- Vessel cards populated via JS -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT CONTROL PANEL: 4 AI SWARM AGENTS REAL-TIME TELEMETRY -->
+  <aside class="absolute right-4 top-20 bottom-4 w-[420px] z-10 flex flex-col space-y-4 pointer-events-auto">
+    <div class="glass-hud rounded-lg p-4 flex-1 flex flex-col overflow-hidden">
+      
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-3">
+        <div class="flex items-center space-x-2 text-cyan-400 font-hud text-xs tracking-wider">
+          <i data-lucide="cpu" class="w-4 h-4 text-cyan-400 animate-spin"></i>
+          <span id="swarmHeaderHeading">AUTONOMOUS 4-AGENT SWARM TELEMETRY</span>
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-[10px] text-emerald-300 font-mono">LIVE SWARM</span>
+        </div>
+      </div>
+
+      <!-- Agent Cards Scrollable -->
+      <div class="overflow-y-auto space-y-3 flex-1 pr-1 font-sans text-xs" id="swarmTelemetryContainer">
+        
+        <!-- Placeholder when idle -->
+        <div id="swarmIdlePlaceholder" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
+          <i data-lucide="radar" class="w-12 h-12 text-slate-600 animate-pulse"></i>
+          <p class="font-hud text-sm text-slate-400" id="idleTitle">SWARM STANDBY MODE</p>
+          <p class="text-xs font-mono text-slate-500 leading-relaxed" id="idleDesc">
+            All 4 Autonomous AI Agents are continuously indexing satellite and maritime corridors. Select or type a crisis scenario to deploy the swarm.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Bottom Executive Action Bar -->
+      <div id="executiveDirectiveBox" class="mt-3 pt-3 border-t border-cyan-500/20 hidden">
+        <div class="p-3 bg-cyan-950/50 border border-cyan-500/40 rounded flex flex-col space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-hud text-cyan-300 uppercase tracking-widest">EXECUTIVE DIRECTIVE DISPATCHED</span>
+            <span class="text-[10px] font-mono text-emerald-400 font-bold" id="savedRoiBadge">SAVED: $855M</span>
+          </div>
+          <p id="executiveSummaryText" class="text-xs text-slate-200 font-mono leading-relaxed line-clamp-3"></p>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- BOTTOM FLOATING IMPACT STATS BAR -->
+  <div id="impactStatusBar" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 glass-hud px-6 py-2.5 rounded-full flex items-center space-x-8 font-hud text-xs hidden shadow-2xl">
+    <div class="flex items-center space-x-2">
+      <span class="text-slate-400">CARGO PROTECTED:</span>
+      <span id="statCargoValue" class="text-emerald-400 font-bold glow-text-green text-sm">$0M</span>
+    </div>
+    <div class="h-4 w-px bg-slate-700"></div>
+    <div class="flex items-center space-x-2">
+      <span class="text-slate-400">AVG TRANSIT DELTA:</span>
+      <span id="statDelay" class="text-amber-400 font-bold text-sm">+0.0 DAYS</span>
+    </div>
+    <div class="h-4 w-px bg-slate-700"></div>
+    <div class="flex items-center space-x-2">
+      <span class="text-slate-400">SAFETY ASSURANCE:</span>
+      <span id="statSafety" class="text-cyan-400 font-bold text-sm">99.4%</span>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC JAVASCRIPT -->
+  <script>
+    let myGlobe = null;
+    let currentLanguage = 'gu'; // 'gu' for Gujarati, 'en' for English
+    let systemState = null;
+    let activeArcs = [];
+    let dangerRings = [];
+
+    // Translations Dictionary
+    const I18N = {
+      en: {
+        subTitle: "3D Autonomous Geopolitical & Supply Chain Crisis Engine",
+        crisisHeading: "CRISIS SIMULATION TRIGGER",
+        selectScenario: "Select Crisis Scenario:",
+        customScenario: "Or Custom Scenario (Any Prompt):",
+        fleetHeading: "MONITORED COMMERCIAL FLEET",
+        swarmHeading: "AUTONOMOUS 4-AGENT SWARM TELEMETRY",
+        idleTitle: "SWARM STANDBY MODE",
+        idleDesc: "All 4 Autonomous AI Agents are continuously indexing satellite and maritime corridors. Select or type a crisis scenario to deploy the swarm."
+      },
+      gu: {
+        subTitle: "3D સ્વાયત્ત વૈશ્વિક કટોકટી અને સપ્લાય-ચેન કમાન્ડ સેન્ટર",
+        crisisHeading: "કટોકટી સિમ્યુલેશન ટ્રિગર",
+        selectScenario: "કટોકટી દ્રશ્ય પસંદ કરો:",
+        customScenario: "અથવા તમારો કોઈપણ પ્રોમ્પ્ટ લખો:",
+        fleetHeading: "નિરીક્ષણ હેઠળના જહાજો (FLEET)",
+        swarmHeading: "૪ સ્વાયત્ત AI એજન્ટ્સ લાઇવ ટેલિમેટ્રી",
+        idleTitle: "AI એજન્ટ્સ સ્ટેન્ડબાય મોડ",
+        idleDesc: "ચારેય AI એજન્ટ્સ વૈશ્વિક સમુદ્રી માર્ગોનું નિરીક્ષણ કરી રહ્યા છે. કોઈપણ કટોકટી પસંદ કરો જેથી AI એજન્ટ્સ લાઈવ એક્શન લે."
+      }
+    };
+
+    function toggleLanguage() {
+      currentLanguage = (currentLanguage === 'gu') ? 'en' : 'gu';
+      updateUILanguage();
+    }
+
+    function updateUILanguage() {
+      const texts = I18N[currentLanguage];
+      document.getElementById('subTitleText').textContent = texts.subTitle;
+      document.getElementById('crisisTriggerHeading').textContent = texts.crisisHeading;
+      document.getElementById('quickScenarioLabel').textContent = texts.selectScenario;
+      document.getElementById('customInputLabel').textContent = texts.customScenario;
+      document.getElementById('fleetMonitoringHeading').textContent = texts.fleetHeading;
+      document.getElementById('swarmHeaderHeading').textContent = texts.swarmHeading;
+      
+      const idleTitleEl = document.getElementById('idleTitle');
+      const idleDescEl = document.getElementById('idleDesc');
+      if (idleTitleEl && idleDescEl) {
+        idleTitleEl.textContent = texts.idleTitle;
+        idleDescEl.textContent = texts.idleDesc;
+      }
+      lucide.createIcons();
+    }
+
+    // Initialize 3D Globe with Globe.gl
+    function init3DGlobe() {
+      const container = document.getElementById('globeViz');
+      myGlobe = Globe()(container)
+        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+        .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+        .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+        .atmosphereColor('#00f3ff')
+        .atmosphereAltitude(0.2)
+        .showAtmosphere(true)
+        // 3D Arcs (Shipping routes)
+        .arcStartLat(d => d.startLat)
+        .arcStartLng(d => d.startLng)
+        .arcEndLat(d => d.endLat)
+        .arcEndLng(d => d.endLng)
+        .arcColor(d => d.color)
+        .arcAltitude(d => d.altitude || 0.15)
+        .arcStroke(d => d.stroke || 1.8)
+        .arcDashLength(0.5)
+        .arcDashGap(0.2)
+        .arcDashAnimateTime(3000)
+        // Rings for Crisis Zones
+        .ringsData(dangerRings)
+        .ringLat(d => d.lat)
+        .ringLng(d => d.lng)
+        .ringColor(() => d => `rgba(255, 0, 85, ${1 - d})`)
+        .ringMaxRadius(d => d.maxR || 12)
+        .ringPropagationSpeed(2.5)
+        .ringRepeatPeriod(1000)
+        // Points for strategic ports
+        .pointsData([])
+        .pointLat(d => d.lat)
+        .pointLng(d => d.lng)
+        .pointColor(d => d.color || '#00f3ff')
+        .pointAltitude(0.02)
+        .pointRadius(0.6)
+        .pointLabel(d => `<b>${d.name}</b> (${d.country || ''})`);
+
+      // Initial camera positioning: focusing over Indian Ocean / Eurasia
+      myGlobe.pointOfView({ lat: 20, lng: 65, altitude: 2.2 }, 2000);
+      
+      // Auto-rotation
+      myGlobe.controls().autoRotate = true;
+      myGlobe.controls().autoRotateSpeed = 0.5;
+
+      // Stop auto-rotation when user interacts
+      container.addEventListener('mousedown', () => {
+        myGlobe.controls().autoRotate = false;
+      });
+    }
+
+    // Load Initial State from FastAPI Backend
+    async function fetchInitialState() {
+      try {
+        const res = await fetch('/api/initial-state');
+        systemState = await res.json();
+        renderPresets();
+        renderFleet();
+        renderBaseMaritimeRoutes();
+      } catch (err) {
+        console.error("Failed to load initial state:", err);
+      }
+    }
+
+    // Render Preset Crisis Buttons
+    function renderPresets() {
+      const container = document.getElementById('presetsContainer');
+      container.innerHTML = '';
+      systemState.presets.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-2 rounded bg-slate-900/80 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-500/50 transition flex items-center justify-between group";
+        btn.onclick = () => runCrisisSimulation(p.id);
+        btn.innerHTML = `
+          <div class="flex flex-col">
+            <span class="text-xs font-hud text-slate-200 group-hover:text-cyan-300">${p.title}</span>
+            <span class="text-[10px] font-mono text-slate-500">${p.chokepoint} · ${p.severity}</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400"></i>
+        `;
+        container.appendChild(btn);
+      });
+      lucide.createIcons();
+    }
+
+    // Render Monitored Fleet
+    function renderFleet() {
+      const container = document.getElementById('fleetContainer');
+      container.innerHTML = '';
+      systemState.fleet.forEach(v => {
+        const card = document.createElement('div');
+        card.id = `fleet-${v.id}`;
+        card.className = "p-2.5 rounded bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition flex flex-col space-y-1.5";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-hud text-xs text-cyan-300">${v.name.split('(')[0]}</span>
+            <span class="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30">${v.status}</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-sans line-clamp-1">${v.cargo}</p>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+            <span>VALUE: $${v.cargo_value_usd_m}M</span>
+            <span>SPEED: ${v.speed_knots} KNOTS</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Render Base Maritime Routes on the 3D Globe
+    function renderBaseMaritimeRoutes() {
+      activeArcs = [];
+      const ports = systemState.ports;
+
+      // Sample connecting shipping corridors
+      const corridors = [
+        ["Shanghai", "Singapore"],
+        ["Singapore", "Colombo"],
+        ["Colombo", "Suez Port"],
+        ["Dubai (Jebel Ali)", "Suez Port"],
+        ["Mumbai (JNPT)", "Suez Port"],
+        ["Suez Port", "Rotterdam"],
+        ["Rotterdam", "London (Gateway)"],
+        ["Rotterdam", "New York"],
+        ["Shanghai", "Tokyo"],
+        ["Tokyo", "Los Angeles"]
+      ];
+
+      corridors.forEach(([from, to]) => {
+        if (ports[from] && ports[to]) {
+          activeArcs.push({
+            startLat: ports[from].lat,
+            startLng: ports[from].lng,
+            endLat: ports[to].lat,
+            endLng: ports[to].lng,
+            color: ['rgba(0, 243, 255, 0.65)', 'rgba(0, 243, 255, 0.15)'],
+            stroke: 1.2,
+            altitude: 0.12
+          });
+        }
+      });
+
+      myGlobe.arcsData(activeArcs);
+
+      // Render Port Markers
+      const portPoints = Object.entries(ports).map(([name, p]) => ({
+        name,
+        country: p.country,
+        lat: p.lat,
+        lng: p.lng,
+        color: '#00f3ff'
+      }));
+      myGlobe.pointsData(portPoints);
+    }
+
+    // Trigger Crisis Simulation
+    async function runCrisisSimulation(presetId, customPrompt = null) {
+      // Visual feedback: DEFCON RED
+      const defcon = document.getElementById('defconStatus');
+      defcon.textContent = "RED · CRISIS ACTIVE";
+      defcon.className = "font-hud font-bold text-red-500 glow-text-red px-2 py-0.5 bg-red-950/60 border border-red-500/50 rounded animate-pulse";
+
+      // Show Telemetry Loader
+      const swarmContainer = document.getElementById('swarmTelemetryContainer');
+      swarmContainer.innerHTML = `
+        <div class="h-full flex flex-col items-center justify-center space-y-3 p-6 text-center">
+          <div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-hud text-xs text-cyan-300">SWARM ORCHESTRATION IN PROGRESS...</span>
+          <span class="text-[10px] font-mono text-slate-500">Agent 1 to 4 synchronizing satellite and oceanic corridors</span>
+        </div>
+      `;
+
+      try {
+        const payload = presetId ? { preset_id: presetId } : { custom_prompt: customPrompt };
+        const res = await fetch('/api/simulate-crisis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        handleSimulationResponse(data);
+      } catch (err) {
+        console.error("Simulation error:", err);
+        alert("Simulation backend connection failed. Ensure python app.py is running!");
+      }
+    }
+
+    function triggerCustomCrisis() {
+      const input = document.getElementById('customPromptInput');
+      const val = input.value.trim();
+      if (!val) {
+        alert("Please enter a crisis prompt!");
+        return;
+      }
+      runCrisisSimulation(null, val);
+    }
+
+    // Handle and Render Swarm Telemetry & 3D Visualization
+    function handleSimulationResponse(data) {
+      const crisis = data.crisis;
+      const agent1 = data.agent_1_intelligence;
+      const agent2 = data.agent_2_route_optimizer;
+      const agent3 = data.agent_3_financial_auditor;
+      const agent4 = data.agent_4_executive_diplomat;
+
+      // 1. Update 3D Globe: Add Danger Zone Rings
+      dangerRings = [{
+        lat: crisis.lat,
+        lng: crisis.lng,
+        maxR: 18
+      }];
+      myGlobe.ringsData(dangerRings);
+
+      // Focus Camera onto Crisis Epicenter
+      myGlobe.pointOfView({ lat: crisis.lat, lng: crisis.lng, altitude: 1.8 }, 1500);
+
+      // 2. Add New Safe Emerald Green Arcs for Rerouted Vessels
+      let newArcs = [...activeArcs];
+      agent2.forEach(plan => {
+        const coords = plan.route_coordinates;
+        for (let i = 0; i < coords.length - 1; i++) {
+          newArcs.push({
+            startLat: coords[i].lat,
+            startLng: coords[i].lng,
+            endLat: coords[i + 1].lat,
+            endLng: coords[i + 1].lng,
+            color: ['#00ff66', '#00ff66'], // Neon Emerald Green
+            stroke: 2.8,
+            altitude: 0.22
+          });
+        }
+      });
+      myGlobe.arcsData(newArcs);
+
+      // 3. Render the 4 Agent Telemetry Cards
+      const swarmContainer = document.getElementById('swarmTelemetryContainer');
+      swarmContainer.innerHTML = `
+        <!-- Agent 1 Card -->
+        <div class="p-3 rounded bg-slate-900/90 border border-red-500/40 shadow-lg space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-hud text-xs text-red-400 flex items-center space-x-1.5">
+              <i data-lucide="satellite" class="w-3.5 h-3.5"></i>
+              <span>AGENT 1: ${agent1.agent}</span>
+            </span>
+            <span class="text-[10px] font-mono text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40">${agent1.threat_level}</span>
+          </div>
+          <p class="text-xs text-slate-300 font-mono">${agent1.description}</p>
+          <div class="text-[10px] font-mono text-amber-300">
+            ⚠ EXCLUSION RADIUS: ${agent1.exclusion_radius_km} KM · IMPACTED: ${agent1.impacted_vessels.join(', ')}
+          </div>
+        </div>
+
+        <!-- Agent 2 Card -->
+        <div class="p-3 rounded bg-slate-900/90 border border-emerald-500/40 shadow-lg space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-hud text-xs text-emerald-400 flex items-center space-x-1.5">
+              <i data-lucide="compass" class="w-3.5 h-3.5"></i>
+              <span>AGENT 2: ${agent2[0].strategy ? 'NAVEX-4' : 'NAVEX'}</span>
+            </span>
+            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">3D REROUTE ACTIVE</span>
+          </div>
+          <p class="text-xs text-slate-300 font-mono">Bypass Strategy: ${agent2[0].strategy}</p>
+          <div class="text-[10px] font-mono text-emerald-300">
+            ✓ SAFE WAYPOINTS: ${agent2[0].optimized_route.join(' ➔ ')}
+          </div>
+        </div>
+
+        <!-- Agent 3 Card -->
+        <div class="p-3 rounded bg-slate-900/90 border border-cyan-500/40 shadow-lg space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-hud text-xs text-cyan-400 flex items-center space-x-1.5">
+              <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+              <span>AGENT 3: ${agent3.agent}</span>
+            </span>
+            <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-500/40">QUANT AUDIT</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-300 pt-1">
+            <div class="bg-slate-950/70 p-1.5 rounded">
+              <span class="text-slate-500 block">CARGO PRESERVED:</span>
+              <span class="text-emerald-400 font-bold">$${agent3.total_cargo_value_saved_usd_m}M</span>
+            </div>
+            <div class="bg-slate-950/70 p-1.5 rounded">
+              <span class="text-slate-500 block">COST VARIANCE:</span>
+              <span class="text-amber-400 font-bold">+$${(agent3.net_logistics_cost_delta_usd / 1000000).toFixed(2)}M</span>
+            </div>
+            <div class="bg-slate-950/70 p-1.5 rounded">
+              <span class="text-slate-500 block">TRANSIT DELTA:</span>
+              <span class="text-slate-200 font-bold">+${agent3.average_transit_delay_days} DAYS</span>
+            </div>
+            <div class="bg-slate-950/70 p-1.5 rounded">
+              <span class="text-slate-500 block">ROI SHIELD RATIO:</span>
+              <span class="text-cyan-300 font-bold">${agent3.roi_loss_prevention_ratio}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent 4 Card -->
+        <div class="p-3 rounded bg-slate-900/90 border border-purple-500/40 shadow-lg space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-hud text-xs text-purple-400 flex items-center space-x-1.5">
+              <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
+              <span>AGENT 4: ${agent4.agent}</span>
+            </span>
+            <span class="text-[10px] font-mono text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/40">${agent4.status}</span>
+          </div>
+          <p class="text-[11px] text-slate-300 font-mono leading-tight">${agent4.insurance_underwriter_filing}</p>
+        </div>
+      `;
+      lucide.createIcons();
+
+      // 4. Update Bottom Floating Bar
+      const bottomBar = document.getElementById('impactStatusBar');
+      bottomBar.classList.remove('hidden');
+      document.getElementById('statCargoValue').textContent = `$${agent3.total_cargo_value_saved_usd_m}M`;
+      document.getElementById('statDelay').textContent = `+${agent3.average_transit_delay_days} DAYS`;
+      document.getElementById('statSafety').textContent = `99.4%`;
+
+      // 5. Update Executive Directive Box
+      const execBox = document.getElementById('executiveDirectiveBox');
+      execBox.classList.remove('hidden');
+      document.getElementById('savedRoiBadge').textContent = `SAVED: $${agent3.total_cargo_value_saved_usd_m}M`;
+      document.getElementById('executiveSummaryText').textContent = agent4.executive_summary;
+    }
+
+    function resetSimulation() {
+      dangerRings = [];
+      myGlobe.ringsData([]);
+      renderBaseMaritimeRoutes();
+      document.getElementById('impactStatusBar').classList.add('hidden');
+      document.getElementById('executiveDirectiveBox').classList.add('hidden');
+      
+      const defcon = document.getElementById('defconStatus');
+      defcon.textContent = "GREEN · NOMINAL";
+      defcon.className = "font-hud font-bold text-emerald-400 glow-text-green px-2 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded";
+
+      const swarmContainer = document.getElementById('swarmTelemetryContainer');
+      swarmContainer.innerHTML = `
+        <div id="swarmIdlePlaceholder" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
+          <i data-lucide="radar" class="w-12 h-12 text-slate-600 animate-pulse"></i>
+          <p class="font-hud text-sm text-slate-400" id="idleTitle">SWARM STANDBY MODE</p>
+          <p class="text-xs font-mono text-slate-500 leading-relaxed" id="idleDesc">
+            All 4 Autonomous AI Agents are continuously indexing satellite and maritime corridors. Select or type a crisis scenario to deploy the swarm.
+          </p>
+        </div>
+      `;
+      updateUILanguage();
+      myGlobe.pointOfView({ lat: 20, lng: 65, altitude: 2.2 }, 1500);
+    }
+
+    // Live UTC Clock
+    function startClock() {
+      setInterval(() => {
+        const d = new Date();
+        document.getElementById('utcTime').textContent = d.toISOString().substring(11, 19) + ' UTC';
+      }, 1000);
+    }
+
+    // Startup
+    window.addEventListener('DOMContentLoaded', () => {
+      init3DGlobe();
+      fetchInitialState();
+      startClock();
+      updateUILanguage();
+    });
+  </script>
+</body>
+</html>

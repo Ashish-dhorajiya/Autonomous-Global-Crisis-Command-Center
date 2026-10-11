@@ -118,3 +118,5 @@ if __name__ == "__main__":
     print("  [*] System live at: http://127.0.0.1:8000")
     print("="*60 + "\n")
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+
+    app = app  
